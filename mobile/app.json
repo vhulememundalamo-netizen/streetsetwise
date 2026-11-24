@@ -1,0 +1,32 @@
+{
+  "expo": {
+    "name": "Setwise",
+    "slug": "setwise",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "za.co.setwise.app",
+      "infoPlist": { "ITSAppUsesNonExemptEncryption": false }
+    },
+    "android": {
+      "package": "za.co.setwise.app",
+      "allowBackup": false,
+      "adaptiveIcon": {
+        "backgroundColor": "#E6F4FE",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "plugins": [
+      "expo-secure-store",
+      ["expo-location", { "locationWhenInUsePermission": "Setwise uses your location only while you track a walk, run or ride, to measure distance. Your route is never saved or sent, only the total distance." }],
+      ["expo-sensors", { "motionPermission": "Setwise counts your steps while you track cardio." }]
+    ],
+    "web": { "favicon": "./assets/favicon.png" }
+  }
+}

@@ -1,0 +1,50 @@
+# docker compose --env-file backend/.env up --build
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set a superuser password in backend/.env}
+      SETWISE_OWNER_PASSWORD: ${SETWISE_OWNER_PASSWORD:?}
+      SETWISE_APP_PASSWORD: ${SETWISE_APP_PASSWORD:?}
+      SETWISE_MAINT_PASSWORD: ${SETWISE_MAINT_PASSWORD:?}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./infra/db/00_roles.sh:/docker-entrypoint-initdb.d/00_roles.sh:ro
+    networks: [internal]          # no published port: only the API can reach the database
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      retries: 10
+
+  migrate:                         # one-shot: tables + row-level security, run as the owner role
+    build: ./backend
+    command: python -m app.migrate
+    env_file: backend/.env
+    depends_on: { db: { condition: service_healthy } }
+    networks: [internal]
+    restart: "no"
+
+  api:
+    build: ./backend
+    env_file: backend/.env
+    environment: { ENV: production }
+    depends_on: { migrate: { condition: service_completed_successfully } }
+    ports: ["127.0.0.1:8000:8000"]  # put a TLS reverse proxy (Caddy, nginx) in front, never expose plain HTTP
+    networks: [internal]
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+
+  retention:                       # POPIA s14: daily clean-up of expired data
+    build: ./backend
+    command: sh -c "while true; do python -m app.maintenance; sleep 86400; done"
+    env_file: backend/.env
+    depends_on: { migrate: { condition: service_completed_successfully } }
+    networks: [internal]
+    read_only: true
+    cap_drop: [ALL]
+
+volumes:
+  pgdata:
+networks:
+  internal:
